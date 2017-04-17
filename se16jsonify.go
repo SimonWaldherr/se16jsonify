@@ -1,12 +1,15 @@
 package main
 
 import (
-	"./conn"
+	c "./conn"
+	s "./structs"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"simonwaldherr.de/go/golibs/as"
+	"simonwaldherr.de/go/golibs/structs"
 	"simonwaldherr.de/go/gwv"
 	"simonwaldherr.de/go/saprfc"
 	"strings"
@@ -15,55 +18,16 @@ import (
 
 var SAPconnection *saprfc.Connection
 
-type kna1 struct {
-	KUNNR string
-	LAND1 string
-	NAME1 string
-	NAME2 string
-	NAME3 string
-	ORT01 string
-	PSTLZ string
-	STRAS string
-	TELF1 string
-	TELF2 string
-}
-
-type mara struct {
-	MATNR string
-	MATKL string
-	MEINS string
-	BRGEW string
-	GEWEI string
-	EAN11 string
-	MFRPN string
-	PRDHA string
-	MAKTX string
-	MAKTG string
-}
-
-type lips struct {
-	VBELN string
-	POSNR string
-	MATNR string
-	MATKL string
-	ARKTX string
-	EANNR string
-	LGORT string
-	LFIMG string
-	VRKME string
-	VKBUR string
-}
-
 func abapSystem() saprfc.ConnectionParameter {
 	return saprfc.ConnectionParameter{
-		Dest:      conn.Dest,
-		Client:    conn.Client,
-		User:      conn.User,
-		Passwd:    conn.Passwd,
-		Lang:      conn.Lang,
-		Ashost:    conn.Ashost,
-		Sysnr:     conn.Sysnr,
-		Saprouter: conn.Saprouter,
+		Dest:      c.Dest,
+		Client:    c.Client,
+		User:      c.User,
+		Passwd:    c.Passwd,
+		Lang:      c.Lang,
+		Ashost:    c.Ashost,
+		Sysnr:     c.Sysnr,
+		Saprouter: c.Saprouter,
 	}
 }
 
@@ -134,63 +98,15 @@ func RfcReadTable(table, query string, fields []FieldStruct) ([][]string, error)
 	return ret, nil
 }
 
-func ReadKNA1(searchtype, searchvalue string) ([][]string, error) {
-	fields := []FieldStruct{
-		FieldStruct{"KUNNR", 0, 0, "", ""},
-		FieldStruct{"LAND1", 0, 0, "", ""},
-		FieldStruct{"NAME1", 0, 0, "", ""},
-		FieldStruct{"NAME2", 0, 0, "", ""},
-		FieldStruct{"NAME3", 0, 0, "", ""},
-		FieldStruct{"ORT01", 0, 0, "", ""},
-		FieldStruct{"PSTLZ", 0, 0, "", ""},
-		FieldStruct{"STRAS", 0, 0, "", ""},
-		FieldStruct{"TELF1", 0, 0, "", ""},
-		FieldStruct{"TELF2", 0, 0, "", ""},
-	}
-	query := fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
-	data, err := RfcReadTable("KNA1", query, fields)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return data, err
-}
+func ReadTable(searchtable, searchtype, searchvalue string, v reflect.Value, t reflect.Type) ([][]string, error) {
+	fields := []FieldStruct{}
+	
+	structs.ReflectHelper(v, t, 0, func(name string, vtype string, value interface{}, depth int) {
+		fields = append(fields, FieldStruct{name, 0, 0, "", ""})
+	})
 
-func ReadMARA(searchtype, searchvalue string) ([][]string, error) {
-	fields := []FieldStruct{
-		FieldStruct{"MATNR", 0, 0, "", ""},
-		FieldStruct{"MATKL", 0, 0, "", ""},
-		FieldStruct{"MEINS", 0, 0, "", ""},
-		FieldStruct{"BRGEW", 0, 0, "", ""},
-		FieldStruct{"GEWEI", 0, 0, "", ""},
-		FieldStruct{"EAN11", 0, 0, "", ""},
-		FieldStruct{"MFRPN", 0, 0, "", ""},
-		FieldStruct{"PRDHA", 0, 0, "", ""},
-		FieldStruct{"MAKTX", 0, 0, "", ""},
-		FieldStruct{"MAKTG", 0, 0, "", ""},
-	}
 	query := fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
-	data, err := RfcReadTable("MARAV", query, fields)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return data, err
-}
-
-func ReadLIPS(searchtype, searchvalue string) ([][]string, error) {
-	fields := []FieldStruct{
-		FieldStruct{"VBELN", 0, 0, "", ""},
-		FieldStruct{"POSNR", 0, 0, "", ""},
-		FieldStruct{"MATNR", 0, 0, "", ""},
-		FieldStruct{"MATKL", 0, 0, "", ""},
-		FieldStruct{"ARKTX", 0, 0, "", ""},
-		FieldStruct{"EANNR", 0, 0, "", ""},
-		FieldStruct{"LGORT", 0, 0, "", ""},
-		FieldStruct{"LFIMG", 0, 0, "", ""},
-		FieldStruct{"VRKME", 0, 0, "", ""},
-		FieldStruct{"VKBUR", 0, 0, "", ""},
-	}
-	query := fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
-	data, err := RfcReadTable("LIPS", query, fields)
+	data, err := RfcReadTable(searchtable, query, fields)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -225,15 +141,15 @@ func stripCtlAndExtFromUTF8(str string) string {
 	}, str)
 }
 
-func LoadKNAStruct(searchtype, searchvalue string) []*kna1 {
+func LoadKNAStruct(searchtype, searchvalue string) []*s.Kna1 {
 	connect()
-	data, _ := ReadKNA1(searchtype, searchvalue)
+	data, _ := ReadTable("KNA1", searchtype, searchvalue, reflect.ValueOf(s.Kna1{}), reflect.TypeOf(s.Kna1{}))
 	close()
 
-	var knadata []*kna1
+	var knadata []*s.Kna1
 
 	for key := range data {
-		row := &kna1{
+		row := &s.Kna1{
 			KUNNR: SAPStringClean(data[key][0]),
 			LAND1: SAPStringClean(data[key][1]),
 			NAME1: SAPStringClean(data[key][2]),
@@ -250,15 +166,15 @@ func LoadKNAStruct(searchtype, searchvalue string) []*kna1 {
 	return knadata
 }
 
-func LoadMARAStruct(searchtype, searchvalue string) []*mara {
+func LoadMARAStruct(searchtype, searchvalue string) []*s.Mara {
 	connect()
-	data, _ := ReadMARA(searchtype, searchvalue)
+	data, _ := ReadTable("MARAV", searchtype, searchvalue, reflect.ValueOf(s.Mara{}), reflect.TypeOf(s.Mara{}))
 	close()
 
-	var maradata []*mara
+	var maradata []*s.Mara
 
 	for key := range data {
-		row := &mara{
+		row := &s.Mara{
 			MATNR: SAPStringClean(data[key][0]),
 			MATKL: SAPStringClean(data[key][1]),
 			MEINS: SAPStringClean(data[key][2]),
@@ -275,15 +191,15 @@ func LoadMARAStruct(searchtype, searchvalue string) []*mara {
 	return maradata
 }
 
-func LoadLIPSStruct(searchtype, searchvalue string) []*lips {
+func LoadLIPSStruct(searchtype, searchvalue string) []*s.Lips {
 	connect()
-	data, _ := ReadLIPS(searchtype, searchvalue)
+	data, _ := ReadTable("LIPS", searchtype, searchvalue, reflect.ValueOf(s.Lips{}), reflect.TypeOf(s.Lips{}))
 	close()
 
-	var lipsdata []*lips
+	var lipsdata []*s.Lips
 
 	for key := range data {
-		row := &lips{
+		row := &s.Lips{
 			VBELN: SAPStringClean(data[key][0]),
 			POSNR: SAPStringClean(data[key][1]),
 			MATNR: SAPStringClean(data[key][2]),
