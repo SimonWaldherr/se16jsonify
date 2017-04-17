@@ -41,6 +41,19 @@ type mara struct {
 	MAKTG string
 }
 
+type lips struct {
+	VBELN string
+	POSNR string
+	MATNR string
+	MATKL string
+	ARKTX string
+	EANNR string
+	LGORT string
+	LFIMG string
+	VRKME string
+	VKBUR string
+}
+
 func abapSystem() saprfc.ConnectionParameter {
 	return saprfc.ConnectionParameter{
 		Dest:      conn.Dest,
@@ -156,9 +169,28 @@ func ReadMARA(searchtype, searchvalue string) ([][]string, error) {
 		FieldStruct{"MAKTG", 0, 0, "", ""},
 	}
 	query := fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
-	fmt.Println(query)
 	data, err := RfcReadTable("MARAV", query, fields)
-	fmt.Printf("%#v\n", data)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return data, err
+}
+
+func ReadLIPS(searchtype, searchvalue string) ([][]string, error) {
+	fields := []FieldStruct{
+		FieldStruct{"VBELN", 0, 0, "", ""},
+		FieldStruct{"POSNR", 0, 0, "", ""},
+		FieldStruct{"MATNR", 0, 0, "", ""},
+		FieldStruct{"MATKL", 0, 0, "", ""},
+		FieldStruct{"ARKTX", 0, 0, "", ""},
+		FieldStruct{"EANNR", 0, 0, "", ""},
+		FieldStruct{"LGORT", 0, 0, "", ""},
+		FieldStruct{"LFIMG", 0, 0, "", ""},
+		FieldStruct{"VRKME", 0, 0, "", ""},
+		FieldStruct{"VKBUR", 0, 0, "", ""},
+	}
+	query := fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
+	data, err := RfcReadTable("LIPS", query, fields)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -193,12 +225,12 @@ func stripCtlAndExtFromUTF8(str string) string {
 	}, str)
 }
 
-func LoadKNAStruct(searchtype, searchvalue string) map[string]*kna1 {
+func LoadKNAStruct(searchtype, searchvalue string) []*kna1 {
 	connect()
 	data, _ := ReadKNA1(searchtype, searchvalue)
 	close()
 
-	knadata := make(map[string]*kna1)
+	var knadata []*kna1
 
 	for key := range data {
 		row := &kna1{
@@ -213,17 +245,17 @@ func LoadKNAStruct(searchtype, searchvalue string) map[string]*kna1 {
 			TELF1: SAPStringClean(data[key][8]),
 			TELF2: SAPStringClean(data[key][9]),
 		}
-		knadata[row.KUNNR] = row
+		knadata = append(knadata, row)
 	}
 	return knadata
 }
 
-func LoadMARAStruct(searchtype, searchvalue string) map[string]*mara {
+func LoadMARAStruct(searchtype, searchvalue string) []*mara {
 	connect()
 	data, _ := ReadMARA(searchtype, searchvalue)
 	close()
 
-	maradata := make(map[string]*mara)
+	var maradata []*mara
 
 	for key := range data {
 		row := &mara{
@@ -238,9 +270,34 @@ func LoadMARAStruct(searchtype, searchvalue string) map[string]*mara {
 			MAKTX: SAPStringClean(data[key][8]),
 			MAKTG: SAPStringClean(data[key][9]),
 		}
-		maradata[row.MATNR] = row
+		maradata = append(maradata, row)
 	}
 	return maradata
+}
+
+func LoadLIPSStruct(searchtype, searchvalue string) []*lips {
+	connect()
+	data, _ := ReadLIPS(searchtype, searchvalue)
+	close()
+
+	var lipsdata []*lips
+
+	for key := range data {
+		row := &lips{
+			VBELN: SAPStringClean(data[key][0]),
+			POSNR: SAPStringClean(data[key][1]),
+			MATNR: SAPStringClean(data[key][2]),
+			MATKL: SAPStringClean(data[key][3]),
+			ARKTX: SAPStringClean(data[key][4]),
+			EANNR: SAPStringClean(data[key][5]),
+			LGORT: SAPStringClean(data[key][6]),
+			LFIMG: SAPStringClean(data[key][7]),
+			VRKME: SAPStringClean(data[key][8]),
+			VKBUR: SAPStringClean(data[key][9]),
+		}
+		lipsdata = append(lipsdata, row)
+	}
+	return lipsdata
 }
 
 func knahandler(rw http.ResponseWriter, req *http.Request) (string, int) {
@@ -285,7 +342,7 @@ func marahandler(rw http.ResponseWriter, req *http.Request) (string, int) {
 		searchtype, searchvalue = x[0], x[1]
 		searchtype = strings.ToUpper(searchtype)
 
-		if searchtype != "MATNR" && searchtype != "MAKTX" && searchtype != "MAKTG" && searchtype != "EAN11" && searchtype != "ZZ_HERNAME" {
+		if searchtype != "MATNR" && searchtype != "MAKTX" && searchtype != "MAKTG" && searchtype != "EAN11" {
 			searchtype = "MATNR"
 		}
 
@@ -305,12 +362,46 @@ func marahandler(rw http.ResponseWriter, req *http.Request) (string, int) {
 	return "", http.StatusOK
 }
 
+func lipshandler(rw http.ResponseWriter, req *http.Request) (string, int) {
+	var searchtype, searchvalue string
+	url := strings.Replace(req.RequestURI, "/lips/", "", 1)
+	x := strings.Split(url, "/")
+
+	if len(x) < 2 {
+		searchtype, searchvalue = "VBELN", as.FixedLengthBefore(url, "0", 10)
+	} else {
+		searchtype, searchvalue = x[0], x[1]
+		searchtype = strings.ToUpper(searchtype)
+
+		if searchtype != "VBELN" && searchtype != "MATNR" && searchtype != "MATKL" && searchtype != "EANNR" {
+			searchtype = "VBELN"
+		}
+
+		searchvalue = strings.Trim(searchvalue, "%\t\n\r ")
+
+		if searchtype == "VBELN" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 10)
+		} else if searchtype == "MATNR" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 18)
+		} else {
+			searchvalue = "%" + searchvalue + "%"
+		}
+	}
+
+	jstr, _ := json.Marshal(LoadLIPSStruct(searchtype, searchvalue))
+	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
+	io.WriteString(rw, string(jstr))
+	return "", http.StatusOK
+}
+
 func main() {
 	HTTPD := gwv.NewWebServer(8082, 60)
 
 	HTTPD.URLhandler(
 		gwv.URL("^/kna1/.*$", knahandler, gwv.MANUAL),
 		gwv.URL("^/mara/.*$", marahandler, gwv.MANUAL),
+		gwv.URL("^/lips/.*$", lipshandler, gwv.MANUAL),
 	)
 
 	HTTPD.Start()
