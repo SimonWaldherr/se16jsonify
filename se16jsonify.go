@@ -100,7 +100,7 @@ func RfcReadTable(table, query string, fields []FieldStruct) ([][]string, error)
 
 func ReadTable(searchtable, searchtype, searchvalue string, v reflect.Value, t reflect.Type) ([][]string, error) {
 	fields := []FieldStruct{}
-	
+
 	structs.ReflectHelper(v, t, 0, func(name string, vtype string, value interface{}, depth int) {
 		fields = append(fields, FieldStruct{name, 0, 0, "", ""})
 	})
@@ -216,6 +216,78 @@ func LoadLIPSStruct(searchtype, searchvalue string) []*s.Lips {
 	return lipsdata
 }
 
+func LoadLIKPStruct(searchtype, searchvalue string) []*s.Likp {
+	connect()
+	data, _ := ReadTable("LIKP", searchtype, searchvalue, reflect.ValueOf(s.Likp{}), reflect.TypeOf(s.Likp{}))
+	close()
+
+	var likpdata []*s.Likp
+
+	for key := range data {
+		row := &s.Likp{
+			VBELN:         SAPStringClean(data[key][0]),
+			VBTYP:         SAPStringClean(data[key][1]),
+			LFART:         SAPStringClean(data[key][2]),
+			VKBUR:         SAPStringClean(data[key][3]),
+			ROUTE:         SAPStringClean(data[key][4]),
+			KUNAG:         SAPStringClean(data[key][5]),
+			KUNNR:         SAPStringClean(data[key][6]),
+			VLSTK:         SAPStringClean(data[key][7]),
+			WADAT_IST:     SAPStringClean(data[key][8]),
+			SPE_WAUHR_IST: SAPStringClean(data[key][9]),
+			ZUKRL:         SAPStringClean(data[key][10]),
+			LGNUM:         SAPStringClean(data[key][11]),
+		}
+		likpdata = append(likpdata, row)
+	}
+	return likpdata
+}
+
+func LoadKNMTStruct(searchtype, searchvalue string) []*s.Knmt {
+	connect()
+	data, _ := ReadTable("KNMT", searchtype, searchvalue, reflect.ValueOf(s.Knmt{}), reflect.TypeOf(s.Knmt{}))
+	close()
+
+	var knmtdata []*s.Knmt
+
+	for key := range data {
+		row := &s.Knmt{
+			MATNR: SAPStringClean(data[key][0]),
+			KUNNR: SAPStringClean(data[key][1]),
+			VKORG: SAPStringClean(data[key][2]),
+			KDMAT: SAPStringClean(data[key][3]),
+			MEINS: SAPStringClean(data[key][4]),
+			ERNAM: SAPStringClean(data[key][5]),
+			ERDAT: SAPStringClean(data[key][6]),
+		}
+		knmtdata = append(knmtdata, row)
+	}
+	return knmtdata
+}
+
+func LoadMBEWStruct(searchtype, searchvalue string) []*s.Mbew {
+	connect()
+	data, _ := ReadTable("MBEW", searchtype, searchvalue, reflect.ValueOf(s.Mbew{}), reflect.TypeOf(s.Mbew{}))
+	close()
+
+	var mbewdata []*s.Mbew
+
+	for key := range data {
+		row := &s.Mbew{
+			MATNR: SAPStringClean(data[key][0]),
+			LBKUM: SAPStringClean(data[key][1]),
+			SALK3: SAPStringClean(data[key][2]),
+			VPRSV: SAPStringClean(data[key][3]),
+			VERPR: SAPStringClean(data[key][4]),
+			STPRS: SAPStringClean(data[key][5]),
+			PEINH: SAPStringClean(data[key][6]),
+			BWKEY: SAPStringClean(data[key][7]),
+		}
+		mbewdata = append(mbewdata, row)
+	}
+	return mbewdata
+}
+
 func knahandler(rw http.ResponseWriter, req *http.Request) (string, int) {
 	var searchtype, searchvalue string
 	url := strings.Replace(req.RequestURI, "/kna1/", "", 1)
@@ -311,13 +383,113 @@ func lipshandler(rw http.ResponseWriter, req *http.Request) (string, int) {
 	return "", http.StatusOK
 }
 
+func likphandler(rw http.ResponseWriter, req *http.Request) (string, int) {
+	var searchtype, searchvalue string
+	url := strings.Replace(req.RequestURI, "/likp/", "", 1)
+	x := strings.Split(url, "/")
+
+	if len(x) < 2 {
+		searchtype, searchvalue = "VBELN", as.FixedLengthBefore(url, "0", 10)
+	} else {
+		searchtype, searchvalue = x[0], x[1]
+		searchtype = strings.ToUpper(searchtype)
+
+		if searchtype != "VBELN" && searchtype != "VKBUR" && searchtype != "KUNAG" && searchtype != "KUNNR" && searchtype != "ZUKRL" {
+			searchtype = "VBELN"
+		}
+
+		searchvalue = strings.Trim(searchvalue, "%\t\n\r ")
+
+		if searchtype == "VBELN" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 10)
+		} else if searchtype == "KUNNR" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 10)
+		} else if searchtype == "KUNAG" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 10)
+		} else {
+			searchvalue = "%" + searchvalue
+		}
+	}
+
+	jstr, _ := json.Marshal(LoadLIKPStruct(searchtype, searchvalue))
+	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
+	io.WriteString(rw, string(jstr))
+	return "", http.StatusOK
+}
+
+func knmthandler(rw http.ResponseWriter, req *http.Request) (string, int) {
+	var searchtype, searchvalue string
+	url := strings.Replace(req.RequestURI, "/knmt/", "", 1)
+	x := strings.Split(url, "/")
+
+	if len(x) < 2 {
+		searchtype, searchvalue = "MATNR", as.FixedLengthBefore(url, "0", 18)
+	} else {
+		searchtype, searchvalue = x[0], x[1]
+		searchtype = strings.ToUpper(searchtype)
+
+		if searchtype != "MATNR" && searchtype != "KUNNR" && searchtype != "KDMAT" {
+			searchtype = "MATNR"
+		}
+
+		searchvalue = strings.Trim(searchvalue, "%\t\n\r ")
+
+		if searchtype == "MATNR" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 18)
+		} else if searchtype == "KUNNR" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 10)
+		} else {
+			searchvalue = "%" + searchvalue
+		}
+	}
+
+	jstr, _ := json.Marshal(LoadKNMTStruct(searchtype, searchvalue))
+	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
+	io.WriteString(rw, string(jstr))
+	return "", http.StatusOK
+}
+
+func mbewhandler(rw http.ResponseWriter, req *http.Request) (string, int) {
+	var searchtype, searchvalue string
+	url := strings.Replace(req.RequestURI, "/mbew/", "", 1)
+	x := strings.Split(url, "/")
+
+	if len(x) < 2 {
+		searchtype, searchvalue = "MATNR", as.FixedLengthBefore(url, "0", 18)
+	} else {
+		searchtype, searchvalue = x[0], x[1]
+		searchtype = strings.ToUpper(searchtype)
+
+		if searchtype != "MATNR" {
+			searchtype = "MATNR"
+		}
+
+		searchvalue = strings.Trim(searchvalue, "%\t\n\r ")
+
+		if searchtype == "MATNR" {
+			searchvalue = as.FixedLengthBefore(searchvalue, "0", 18)
+		}
+	}
+
+	jstr, _ := json.Marshal(LoadMBEWStruct(searchtype, searchvalue))
+	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
+	io.WriteString(rw, string(jstr))
+	return "", http.StatusOK
+}
+
 func main() {
-	HTTPD := gwv.NewWebServer(8082, 60)
+	HTTPD := gwv.NewWebServer(8085, 60)
 
 	HTTPD.URLhandler(
 		gwv.URL("^/kna1/.*$", knahandler, gwv.MANUAL),
 		gwv.URL("^/mara/.*$", marahandler, gwv.MANUAL),
 		gwv.URL("^/lips/.*$", lipshandler, gwv.MANUAL),
+		gwv.URL("^/likp/.*$", likphandler, gwv.MANUAL),
+		gwv.URL("^/knmt/.*$", knmthandler, gwv.MANUAL),
+		gwv.URL("^/mbew/.*$", mbewhandler, gwv.MANUAL),
 	)
 
 	HTTPD.Start()

@@ -38,3 +38,40 @@ type Lips struct {
 	VRKME string
 	VKBUR string
 }
+
+type Likp struct {
+	VBELN         string
+	VBTYP         string
+	LFART         string
+	VKBUR         string
+	ROUTE         string
+	KUNAG         string
+	KUNNR         string
+	VLSTK         string
+	WADAT_IST     string
+	SPE_WAUHR_IST string
+	ZUKRL         string
+	LGNUM         string
+}
+
+type Knmt struct {
+	MATNR string
+	KUNNR string
+	VKORG string
+	KDMAT string
+	MEINS string
+	ERNAM string
+	ERDAT string
+}
+
+type Mbew struct {
+	MATNR string
+	LBKUM string
+	SALK3 string
+	VPRSV string
+	VERPR string
+	STPRS string
+	PEINH string
+	BWKEY string
+}
+
