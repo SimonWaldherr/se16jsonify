@@ -24,6 +24,7 @@ type Mara struct {
 	PRDHA string
 	MAKTX string
 	MAKTG string
+	MFRNR string
 }
 
 type Lips struct {

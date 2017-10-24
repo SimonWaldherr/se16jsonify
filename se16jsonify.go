@@ -185,6 +185,7 @@ func LoadMARAStruct(searchtype, searchvalue string) []*s.Mara {
 			PRDHA: SAPStringClean(data[key][7]),
 			MAKTX: SAPStringClean(data[key][8]),
 			MAKTG: SAPStringClean(data[key][9]),
+			MFRNR: SAPStringClean(data[key][10]),
 		}
 		maradata = append(maradata, row)
 	}
