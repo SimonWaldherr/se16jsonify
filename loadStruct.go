@@ -152,3 +152,23 @@ func LoadMBEWStruct(searchtype, searchvalue string) []*s.Mbew {
 	}
 	return mbewdata
 }
+
+func LoadVBFAStruct(searchtype, searchvalue string) []*s.Vbfa {
+	connect()
+	data, _ := ReadTable("VBFA", searchtype, searchvalue, reflect.ValueOf(s.Vbfa{}), reflect.TypeOf(s.Vbfa{}))
+	close()
+
+	var vbfadata []*s.Vbfa
+
+	for key := range data {
+		row := &s.Vbfa{
+			VBELV:   SAPStringClean(data[key][0]),
+			POSNV:   SAPStringClean(data[key][1]),
+			VBELN:   SAPStringClean(data[key][2]),
+			POSNN:   SAPStringClean(data[key][3]),
+			VBTYP_N: SAPStringClean(data[key][4]),
+		}
+		vbfadata = append(vbfadata, row)
+	}
+	return vbfadata
+}

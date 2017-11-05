@@ -137,7 +137,7 @@ func stripCtlAndExtFromUTF8(str string) string {
 }
 
 func main() {
-	HTTPD := gwv.NewWebServer(8083, 60)
+	HTTPD := gwv.NewWebServer(8088, 60)
 
 	HTTPD.URLhandler(
 		gwv.URL("^/kna1/.*$", knahandler, gwv.MANUAL),
@@ -146,6 +146,7 @@ func main() {
 		gwv.URL("^/likp/.*$", likphandler, gwv.MANUAL),
 		gwv.URL("^/knmt/.*$", knmthandler, gwv.MANUAL),
 		gwv.URL("^/mbew/.*$", mbewhandler, gwv.MANUAL),
+		gwv.URL("^/vbfa/.*$", vbfahandler, gwv.MANUAL),
 	)
 
 	HTTPD.Start()

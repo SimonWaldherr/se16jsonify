@@ -76,3 +76,10 @@ type Mbew struct {
 	BWKEY string
 }
 
+type Vbfa struct {
+	VBELV   string
+	POSNV   string
+	VBELN   string
+	POSNN   string
+	VBTYP_N string
+}

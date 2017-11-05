@@ -179,21 +179,39 @@ func mbewhandler(rw http.ResponseWriter, req *http.Request) (string, int) {
 	if len(x) < 2 {
 		searchtype, searchvalue = "MATNR", as.FixedLengthBefore(url, "0", 18)
 	} else {
-		searchtype, searchvalue = x[0], x[1]
-		searchtype = strings.ToUpper(searchtype)
-
-		if searchtype != "MATNR" {
-			searchtype = "MATNR"
-		}
-
+		searchvalue = x[1]
+		searchtype = "MATNR"
 		searchvalue = strings.Trim(searchvalue, "%\t\n\r ")
-
-		if searchtype == "MATNR" {
-			searchvalue = as.FixedLengthBefore(searchvalue, "0", 18)
-		}
+		searchvalue = as.FixedLengthBefore(searchvalue, "0", 18)
 	}
 
 	jstr, _ := json.Marshal(LoadMBEWStruct(searchtype, searchvalue))
+	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	rw.WriteHeader(http.StatusOK)
+	io.WriteString(rw, string(jstr))
+	return "", http.StatusOK
+}
+
+func vbfahandler(rw http.ResponseWriter, req *http.Request) (string, int) {
+	var searchtype, searchvalue string
+	url := strings.Replace(req.RequestURI, "/vbfa/", "", 1)
+	x := strings.Split(url, "/")
+
+	if len(x) < 2 {
+		searchtype, searchvalue = "VBELN", as.FixedLengthBefore(url, "0", 18)
+	} else {
+		searchtype, searchvalue = x[0], x[1]
+		searchtype = strings.ToUpper(searchtype)
+
+		if searchtype != "VBELN" && searchtype != "VBELV" {
+			searchtype = "VBELN"
+		}
+
+		searchvalue = strings.Trim(searchvalue, "%\t\n\r ")
+		searchvalue = as.FixedLengthBefore(searchvalue, "0", 10)
+	}
+
+	jstr, _ := json.Marshal(LoadVBFAStruct(searchtype, searchvalue))
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 	rw.WriteHeader(http.StatusOK)
 	io.WriteString(rw, string(jstr))
