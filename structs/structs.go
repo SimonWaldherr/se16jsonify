@@ -83,3 +83,16 @@ type Vbfa struct {
 	POSNN   string
 	VBTYP_N string
 }
+
+type Vbbe struct {
+	WERKS string
+	LGORT string
+	VBELN string
+	MATNR string
+	MBDAT string
+	OMENG string
+	VMENG string
+	MEINS string
+	KUNNR string
+}
+

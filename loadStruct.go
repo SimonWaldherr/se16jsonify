@@ -172,3 +172,27 @@ func LoadVBFAStruct(searchtype, searchvalue string) []*s.Vbfa {
 	}
 	return vbfadata
 }
+
+func LoadVBBEStruct(searchtype, searchvalue string) []*s.Vbbe {
+	connect()
+	data, _ := ReadTable("VBBE", searchtype, searchvalue, reflect.ValueOf(s.Vbbe{}), reflect.TypeOf(s.Vbbe{}))
+	close()
+
+	var vbbedata []*s.Vbbe
+
+	for key := range data {
+		row := &s.Vbbe{
+			WERKS: SAPStringClean(data[key][0]),
+			LGORT: SAPStringClean(data[key][1]),
+			VBELN: SAPStringClean(data[key][2]),
+			MATNR: SAPStringClean(data[key][3]),
+			MBDAT: SAPStringClean(data[key][4]),
+			OMENG: SAPStringClean(data[key][5]),
+			VMENG: SAPStringClean(data[key][6]),
+			MEINS: SAPStringClean(data[key][7]),
+			KUNNR: SAPStringClean(data[key][8]),
+		}
+		vbbedata = append(vbbedata, row)
+	}
+	return vbbedata
+}

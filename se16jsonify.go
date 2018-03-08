@@ -100,7 +100,14 @@ func ReadTable(searchtable, searchtype, searchvalue string, v reflect.Value, t r
 		fields = append(fields, FieldStruct{name, 0, 0, "", ""})
 	})
 
-	query := fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
+	var query string
+
+	if searchtype == "*" {
+		query = fmt.Sprintf(" %s ", searchvalue)
+	} else {
+		query = fmt.Sprintf("%s LIKE '%s'", searchtype, searchvalue)
+	}
+
 	data, err := RfcReadTable(searchtable, query, fields)
 	if err != nil {
 		fmt.Println(err)
@@ -137,7 +144,7 @@ func stripCtlAndExtFromUTF8(str string) string {
 }
 
 func main() {
-	HTTPD := gwv.NewWebServer(8088, 60)
+	HTTPD := gwv.NewWebServer(8089, 60)
 
 	HTTPD.URLhandler(
 		gwv.URL("^/kna1/.*$", knahandler, gwv.MANUAL),
@@ -147,6 +154,7 @@ func main() {
 		gwv.URL("^/knmt/.*$", knmthandler, gwv.MANUAL),
 		gwv.URL("^/mbew/.*$", mbewhandler, gwv.MANUAL),
 		gwv.URL("^/vbfa/.*$", vbfahandler, gwv.MANUAL),
+		gwv.URL("^/vbbe/.*$", vbbehandler, gwv.MANUAL),
 	)
 
 	HTTPD.Start()
